@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Carlos Labrador - Enlaces</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 40px 20px; background: #f5f6f8; color: #111; text-align: center; }
+        .avatar-container { min-height: 128px; margin-bottom: 20px; display: flex; justify-content: center; align-items: center; }
+        .avatar { width: 120px; height: 120px; border-radius: 50%; object-fit: cover; border: 3px solid #fff; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .avatar-placeholder { width: 120px; height: 120px; border-radius: 50%; background: #111; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 44px; font-weight: 700; border: 3px solid #fff; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        h1 { font-size: 22px; font-weight: 700; margin-bottom: 10px; }
+        p { color: #666; margin-bottom: 30px; font-size: 15px; line-height: 1.5; }
+        .lista-botones { display: flex; flex-direction: column; gap: 16px; }
+        .boton-link { display: block; background: #fff; color: #111; padding: 18px; border-radius: 12px; text-decoration: none; font-weight: 600; font-size: 16px; border: 1px solid #eaeaea; box-shadow: 0 4px 12px rgba(0,0,0,0.03); transition: transform 0.2s, background 0.2s; word-break: break-word; }
+        .boton-link:hover { transform: scale(1.02); background: #fdfdfd; }
+        .mensaje { color: #666; font-size: 14px; }
+    </style>
+</head>
+<body>
+
+    <div class="avatar-container" id="contenedor-foto">
+        <div class="avatar-placeholder">C</div>
+    </div>
+
+    <h1>Carlos Labrador</h1>
+    <p>Bienvenidos a mi espacio digital. Conecta conmigo a traves de mis redes.</p>
+
+    <div id="enlaces-cliente" class="lista-botones"></div>
+
+    <script>
+        fetch('/api/perfil')
+            .then(res => res.json())
+            .then(data => {
+                if (!data.existe) return;
+                const contenedor = document.getElementById('contenedor-foto');
+                const img = document.createElement('img');
+                img.src = data.url + '?t=' + new Date().getTime();
+                img.alt = 'Carlos Labrador';
+                img.className = 'avatar';
+                contenedor.innerHTML = '';
+                contenedor.appendChild(img);
+            })
+            .catch(err => console.error('Error al cargar foto:', err));
+
+        fetch('/api/enlaces')
+            .then(res => res.json())
+            .then(enlaces => {
+                const lista = document.getElementById('enlaces-cliente');
+                lista.innerHTML = '';
+
+                if (!enlaces.length) {
+                    const mensaje = document.createElement('div');
+                    mensaje.className = 'mensaje';
+                    mensaje.textContent = 'Aun no hay enlaces publicados.';
+                    lista.appendChild(mensaje);
+                    return;
+                }
+
+                enlaces.forEach(enlace => {
+                    const a = document.createElement('a');
+                    a.href = enlace.url;
+                    a.className = 'boton-link';
+                    a.textContent = enlace.titulo;
+                    a.target = '_blank';
+                    a.rel = 'noopener noreferrer';
+                    lista.appendChild(a);
+                });
+            })
+            .catch(err => console.error('Error al cargar enlaces:', err));
+    </script>
+</body>
+</html>

@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Control Privado</title>
+    <style>
+        body { font-family: sans-serif; max-width: 600px; margin: 40px auto; padding: 20px; background: #f5f6f8; color: #111; }
+        h1 { text-align: center; font-size: 24px; margin-bottom: 30px; font-weight: 700; }
+        h2 { text-align: center; font-size: 18px; margin-top: 40px; font-weight: 700; margin-bottom: 20px; }
+        .card-formulario { background: #fff; padding: 30px; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.03); margin-bottom: 20px; border: 1px solid #eaeaea; }
+        .form-group { margin-bottom: 20px; }
+        label { display: block; margin-bottom: 8px; font-weight: 700; font-size: 14px; }
+        input[type="text"], input[type="file"] { width: 100%; padding: 14px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 15px; background: #fff; color: #333; }
+        .btn-anadir { width: 100%; background: #000; color: #fff; padding: 15px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 16px; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .btn-anadir:hover { background: #222; }
+        .seccion-perfil { display: flex; align-items: center; gap: 20px; margin-top: 15px; flex-wrap: wrap; }
+        .preview-foto { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; background: #ddd; border: 2px solid #ccc; }
+        .btn-quitar { background: #ff4d4d; color: white; border: none; padding: 10px 14px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        .btn-subir { background: #007bff; color: white; border: none; padding: 10px 14px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        .lista-container { display: flex; flex-direction: column; gap: 14px; }
+        .enlace-item { background: #fff; padding: 16px 20px; border-radius: 12px; border: 1px solid #eaeaea; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 8px rgba(0,0,0,0.02); gap: 16px; }
+        .izquierda-item { display: flex; align-items: center; gap: 15px; min-width: 0; }
+        .controles-orden { display: flex; flex-direction: column; gap: 2px; }
+        .btn-orden { background: #eee; border: none; border-radius: 4px; cursor: pointer; padding: 4px 8px; font-size: 12px; }
+        .enlace-info { font-weight: 700; font-size: 16px; color: #111; word-break: break-word; }
+        .btn-borrar { background: #ff4d4d; color: white; border: none; padding: 10px 16px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 14px; }
+        .footer-link { display: block; text-align: center; margin-top: 40px; color: #666; text-decoration: none; font-size: 14px; }
+    </style>
+</head>
+<body>
+
+    <h1>Panel de Control Privado</h1>
+
+    <div class="card-formulario">
+        <form action="/api/enlaces" method="POST">
+            <div class="form-group">
+                <label for="titulo">Titulo del boton:</label>
+                <input type="text" id="titulo" name="titulo" placeholder="Ej: Mi Instagram" required>
+            </div>
+            <div class="form-group">
+                <label for="url">Enlace:</label>
+                <input type="text" id="url" name="url" placeholder="Ej: https://instagram.com/... o tel:+34123456789" required>
+            </div>
+            <input type="hidden" id="posicion" name="posicion" value="0">
+            <button type="submit" class="btn-anadir">Anadir enlace</button>
+        </form>
+    </div>
+
+    <div class="card-formulario">
+        <label>Modificar imagen de perfil:</label>
+        <div class="seccion-perfil">
+            <img id="vista-previa" src="" alt="Perfil" class="preview-foto" style="display: none;">
+            <div id="sin-foto" style="font-size: 14px; color: #666;">Sin foto de perfil actual</div>
+
+            <form action="/api/perfil/subir" method="POST" enctype="multipart/form-data" style="display: flex; gap: 10px; flex-grow: 1; flex-wrap: wrap;">
+                <input type="file" name="imagenPerfil" accept="image/*" required style="padding: 8px; flex: 1; min-width: 180px;">
+                <button type="submit" class="btn-subir">Subir</button>
+            </form>
+
+            <form action="/api/perfil/eliminar" method="POST" id="form-eliminar-foto" style="display: none;">
+                <button type="submit" class="btn-quitar">Quitar</button>
+            </form>
+        </div>
+    </div>
+
+    <h2>Tus enlaces activos actuales:</h2>
+    <div id="lista-enlaces" class="lista-container"></div>
+
+    <a href="/" class="footer-link">Ver vista del cliente</a>
+
+    <script>
+        let listaEnlacesMemoria = [];
+
+        function comprobarPerfil() {
+            fetch('/api/perfil')
+                .then(res => res.json())
+                .then(data => {
+                    const img = document.getElementById('vista-previa');
+                    const txt = document.getElementById('sin-foto');
+                    const btnEliminar = document.getElementById('form-eliminar-foto');
+                    if (data.existe) {
+                        img.src = data.url + '?t=' + new Date().getTime();
+                        img.style.display = 'block';
+                        txt.style.display = 'none';
+                        btnEliminar.style.display = 'block';
+                    } else {
+                        img.style.display = 'none';
+                        txt.style.display = 'block';
+                        btnEliminar.style.display = 'none';
+                    }
+                });
+        }
+
+        function cargarEnlaces() {
+            fetch('/api/enlaces')
+                .then(res => res.json())
+                .then(enlaces => {
+                    listaEnlacesMemoria = enlaces;
+                    renderizarLista();
+                });
+        }
+
+        function renderizarLista() {
+            const lista = document.getElementById('lista-enlaces');
+            lista.innerHTML = '';
+            if (listaEnlacesMemoria.length === 0) {
+                lista.innerHTML = '<p style="text-align:center; color: #666; font-size: 14px;">No hay enlaces activos.</p>';
+                return;
+            }
+
+            listaEnlacesMemoria.forEach((enlace, index) => {
+                const item = document.createElement('div');
+                const izquierda = document.createElement('div');
+                const controles = document.createElement('div');
+                const subir = document.createElement('button');
+                const bajar = document.createElement('button');
+                const info = document.createElement('div');
+                const derecha = document.createElement('div');
+                const form = document.createElement('form');
+                const inputId = document.createElement('input');
+                const borrar = document.createElement('button');
+
+                item.className = 'enlace-item';
+                izquierda.className = 'izquierda-item';
+                controles.className = 'controles-orden';
+                subir.className = 'btn-orden';
+                bajar.className = 'btn-orden';
+                info.className = 'enlace-info';
+
+                subir.type = 'button';
+                bajar.type = 'button';
+                subir.textContent = 'Subir';
+                bajar.textContent = 'Bajar';
+                subir.onclick = () => moverEnlace(index, -1);
+                bajar.onclick = () => moverEnlace(index, 1);
+                info.textContent = enlace.titulo;
+
+                form.action = '/api/eliminar-enlace';
+                form.method = 'POST';
+                form.style.margin = '0';
+                inputId.type = 'hidden';
+                inputId.name = 'id';
+                inputId.value = enlace.id;
+                borrar.type = 'submit';
+                borrar.className = 'btn-borrar';
+                borrar.textContent = 'Eliminar';
+
+                controles.appendChild(subir);
+                controles.appendChild(bajar);
+                izquierda.appendChild(controles);
+                izquierda.appendChild(info);
+                form.appendChild(inputId);
+                form.appendChild(borrar);
+                derecha.appendChild(form);
+                item.appendChild(izquierda);
+                item.appendChild(derecha);
+                lista.appendChild(item);
+            });
+        }
+
+        function moverEnlace(index, direccion) {
+            const nuevoIndex = index + direccion;
+            if (nuevoIndex < 0 || nuevoIndex >= listaEnlacesMemoria.length) return;
+            const temp = listaEnlacesMemoria[index];
+            listaEnlacesMemoria[index] = listaEnlacesMemoria[nuevoIndex];
+            listaEnlacesMemoria[nuevoIndex] = temp;
+            renderizarLista();
+
+            const posicionesEnvio = {};
+            listaEnlacesMemoria.forEach((enlace, i) => { posicionesEnvio[enlace.id] = i; });
+            fetch('/api/ordenar-enlaces', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ posiciones: posicionesEnvio })
+            });
+        }
+
+        comprobarPerfil();
+        cargarEnlaces();
+    </script>
+</body>
+</html>
